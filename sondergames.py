@@ -55,19 +55,48 @@ bl_info = \
         "category":    "Import-Export",
     }
 
+'''
+class SgSelectedActionsList(bpy.types.PropertyGroup):
+    name = bpy.props.StringProperty(name="name", default="")
+    value = bpy.props.IntProperty(name="value", default=42)
+'''
 
-class SelectedActionsList(bpy.types.PropertyGroup):
-    custom_1 = bpy.props.FloatProperty(name="My Float", default=10.2)
-    custom_2 = bpy.props.IntProperty(name="My Int", default=42)
+
+def export_action(operator, context, action):
+    try:
+        file_name = str(action.name) + ".fbx"
+        file_path = join(str(context.scene.export_path), file_name)
+        if exists(file_path) and not operator.overwrite:
+            operator.report({"WARNING"}, "File exists: " + file_name)
+        else:
+            export_fbx_bin.save_single(operator, context.scene,
+                                       filepath=file_path,
+                                       apply_unit_scale=True,
+                                       axis_up="Y",
+                                       axis_forward="-Z",
+                                       context_objects={},
+                                       object_types={"ARMATURE"},
+                                       use_mesh_modifiers=False,
+                                       mesh_smooth_type="OFF",
+                                       bake_anim_use_nla_strips=False,
+                                       bake_anim_use_all_actions=False,
+                                       bake_anim_simplify_factor=0.0,
+                                       add_leaf_bones=False,
+                                       use_mesh_edges=False,
+                                       use_tspace=False,
+                                       )
+            operator.report({"INFO"}, "File exported: " + file_name)
+    except Exception as e:
+        operator.report({"WARNING"}, str(e))
 
 
-class SonderGamesUI(bpy.types.Panel):
+class SgToolsUi(bpy.types.Panel):
     """
     Defines the SonderGames Tools panel
     located on the left panel in the 3D view
     """
 
-    bl_idname = "VIEW_3D_PT_SonderGames"
+    bl_idname = "VIEW_3D_PT_tools_sonder_games"
     bl_label = "Sonder Games Tools"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
@@ -86,52 +115,27 @@ class SonderGamesUI(bpy.types.Panel):
         col.prop(context.scene, "export_path")
 
 
-class ExportAS(bpy.types.Operator):
+class SgExportAllActions(bpy.types.Operator):
     """
     Export selected actions as FBX files
     """
 
-    bl_idname = "sg.export_actions"
+    bl_idname = "sg.export_all_actions"
     bl_label = "Export actions as FBX files"
     bl_options = {"REGISTER"}
 
     overwrite = bpy.props.BoolProperty(name="overwrite", default=False)
-    selected = bpy.props.CollectionProperty(type=SelectedActionsList, name="selected")
 
     def run(self, context):
 
+        #active = bpy.context.active_object
         #if active.type == "ARMATURE":
         #    current_action = active.animation_data.action
         #    if current_action != None:
 
-        active = bpy.context.active_object
         all_actions = bpy.data.actions
         for action in all_actions:
-            try:
-                file_name = str(action.name) + ".fbx"
-                file_path = join(str(context.scene.export_path), file_name)
-                if exists(file_path) and not self.overwrite:
-                    self.report({"WARNING"}, "File exists: " + str(file_name))
-                else:
-                    export_fbx_bin.save_single(self, context.scene,
-                                               filepath=file_path,
-                                               apply_unit_scale=True,
-                                               axis_up="Y",
-                                               axis_forward="-Z",
-                                               context_objects={active},
-                                               object_types={"ARMATURE"},
-                                               use_mesh_modifiers=False,
-                                               mesh_smooth_type="OFF",
-                                               bake_anim_use_nla_strips=False,
-                                               bake_anim_use_all_actions=False,
-                                               bake_anim_simplify_factor=0.0,
-                                               add_leaf_bones=False,
-                                               use_mesh_edges=False,
-                                               use_tspace=False,
-                                               )
-                    self.report({"INFO"}, "File exported: " + str(file_name))
-            except Exception as e:
-                self.report({"WARNING"}, str(e))
+            export_action(self, context, action)
 
     def execute(self, context):
         self.run(context)
@@ -146,15 +150,50 @@ class ExportAS(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
 
-def add_ui(self, context):
-    self.layout.operator(ExportAS.bl_idname, icon="EXPORT")
+class SgExportCurrentAction(bpy.types.Operator):
+    """
+    Export the current action as an FBX file
+    """
+
+    bl_idname = "sg.export_action"
+    bl_label = "Export actions as FBX files"
+    bl_options = {"REGISTER"}
+
+    overwrite = bpy.props.BoolProperty(name="overwrite", default=False)
+
+    def run(self, context):
+        active = bpy.context.active_object
+        if active.type != "ARMATURE":
+            self.report({"WARNING"}, "You may want to select an armature")
+
+        action = active.animation_data.action
+        if action is not None:
+            export_action(self, context, action)
+        else:
+            self.report({"WARNING"}, "Selected object has no active action")
+
+    def execute(self, context):
+        self.run(context)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+
+        #self.run(context)
+        #return {"FINISHED"}
+
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+
+def append_ui(self, context):
+    self.layout.operator(SgExportAllActions.bl_idname, icon="EXPORT")
 
 
 def register():
-    bpy.utils.register_class(SelectedActionsList)
-    bpy.utils.register_class(ExportAS)
-    bpy.utils.register_class(SonderGamesUI)
-    bpy.types.VIEW3D_PT_tools_animation.append(add_ui)
+    #bpy.utils.register_class(SgSelectedActionsList)
+    bpy.utils.register_class(SgToolsUi)
+    bpy.utils.register_class(SgExportAllActions)
+    bpy.types.VIEW_3D_PT_tools_sonder_games.append(append_ui)
     bpy.types.Scene.export_path = bpy.props.StringProperty(
             name="Export path",
             default="/",
@@ -164,10 +203,10 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_class(SelectedActionsList)
-    bpy.utils.unregister_class(ExportAS)
-    bpy.utils.unregister_class(SonderGamesUI)
-    bpy.types.VIEW3D_PT_tools_animation.remove(add_ui)
+    #bpy.utils.unregister_class(SgSelectedActionsList)
+    bpy.utils.unregister_class(SgToolsUi)
+    bpy.utils.unregister_class(SgExportAllActions)
+    bpy.types.VIEW_3D_PT_tools_sonder_games.remove(append_ui)
     del bpy.types.Scene.export_path
 
 
