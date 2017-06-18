@@ -1,7 +1,7 @@
 import bpy
 op = bpy.context.active_operator
 
-op.filepath = '/home/scott/Dropbox/Sonder Games/ASUS-WS/Sister_Locomotion/AS_Sister.fbx'
+op.filepath = '/home/scott/Dropbox/Sonder Games/ASUS-WS/Cat_Animations/AS_Cat.fbx'
 op.axis_forward = '-Z'
 op.axis_up = 'Y'
 op.version = 'BIN7400'
@@ -12,11 +12,11 @@ op.apply_unit_scale = True
 op.bake_space_transform = False
 op.object_types = {'ARMATURE'}
 op.use_mesh_modifiers = False
-op.mesh_smooth_type = 'OFF'
+op.mesh_smooth_type = 'FACE'
 op.use_mesh_edges = False
 op.use_tspace = False
 op.use_custom_props = False
-op.add_leaf_bones = True
+op.add_leaf_bones = False
 op.primary_bone_axis = 'Y'
 op.secondary_bone_axis = 'X'
 op.use_armature_deform_only = False
