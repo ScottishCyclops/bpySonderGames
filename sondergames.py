@@ -16,7 +16,7 @@
 bl_info = {
     "name":        "Sonder Games",
     "author":      "Scott Winkelmann <scottlandart@gmail.com>",
-    "version":     (1, 0, 0),
+    "version":     (1, 0, 1),
     "blender":     (2, 78, 0),
     "location":    "View3D > Toolshelf > Misc > Sonder Games Tools",
     "description": "Sonder Games utilities for Blender",
@@ -62,9 +62,8 @@ def get_as_export_kwargs() -> dict:
     """
 
     return dict(apply_unit_scale=True,
-                axis_up="Y",
-                axis_forward="-Z",
-                context_objects={},
+                axis_up="Z",
+                axis_forward="Y",
                 object_types={"ARMATURE"},
                 use_mesh_modifiers=False,
                 mesh_smooth_type="FACE",
@@ -83,9 +82,8 @@ def get_sk_export_kwargs() -> dict:
     """
 
     return dict(apply_unit_scale=True,
-                axis_up="Y",
-                axis_forward="-Z",
-                context_objects={},
+                axis_up="Z",
+                axis_forward="Y",
                 object_types={"MESH", "ARMATURE"},
                 mesh_smooth_type="FACE",
                 bake_anim=False,
@@ -112,7 +110,10 @@ def export_action_sequence(operator, context, action):
         if exists(file_path) and not operator.overwrite:
             operator.report({"WARNING"}, "File exists: " + file_name)
         else:
-            export_fbx_bin.save_single(operator, context.scene, filepath=file_path, **get_as_export_kwargs()
+            export_fbx_bin.save_single(operator, context.scene,
+                                       filepath=file_path,
+                                       context_objects=context.scene.objects,
+                                       **get_as_export_kwargs()
                                        )
             operator.report({"INFO"}, "File exported: " + file_name)
     except Exception as e:
@@ -150,7 +151,10 @@ def export_skeletal_mesh(operator, context, objects, name):
             if exists(file_path) and not operator.overwrite:
                 operator.report({"WARNING"}, "File exists: " + file_name)
             else:
-                export_fbx_bin.save_single(operator, context.scene, filepath=file_path, **get_sk_export_kwargs()
+                export_fbx_bin.save_single(operator, context.scene,
+                                           filepath=file_path,
+                                           context_objects=objects,
+                                           **get_sk_export_kwargs()
                                            )
                 operator.report({"INFO"}, "File exported: " + file_name)
         except Exception as e:
@@ -190,16 +194,20 @@ class SgExportCurrentAction(bpy.types.Operator):
 
     def run(self, context):
         active = bpy.context.active_object
-        if active.type != "ARMATURE":
-            self.report({"WARNING"}, "You may want to select an armature")
+        if active is not None:
+            if active.type != "ARMATURE":
+                self.report({"WARNING"}, "You may want to select an armature")
 
-        if active.animation_data is not None:
-            if active.animation_data.action is not None:
-                export_action_sequence(self, context, active.animation_data.action)
+            if active.animation_data is not None:
+                if active.animation_data.action is not None:
+                    export_action_sequence(self, context, active.animation_data.action)
+                else:
+                    self.report({"WARNING"}, "Selected object has no active action")
             else:
-                self.report({"WARNING"}, "Selected object has no active action")
+                self.report({"WARNING"}, "Selected object has no animation data")
         else:
-            self.report({"WARNING"}, "Selected object has no animation data")
+            self.report({"ERROR"}, "No active object")
+
 
     def execute(self, context):
         self.run(context)
@@ -242,7 +250,6 @@ class SgToolsUi(bpy.types.Panel):
     # bl_context = "object"
 
     def draw(self, context):
-
         # export box
         self.layout.label(text="Export")
         box_export = self.layout.box()
