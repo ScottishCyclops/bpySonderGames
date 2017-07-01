@@ -30,4 +30,7 @@ This add-on has been tested with Blender 2.78c
   - auto-ik switch
   - show/hide bone groups
   - enable/disable forward motion
+  - remember how long (frames) each actions were
+  - turn ik on or off
+  - remember if ik was on/off for each actions
 - Import box
