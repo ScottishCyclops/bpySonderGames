@@ -23,3 +23,11 @@ You should now see the panel added to your 3D view Toolshelf, under Misc.
 This add-on has been tested with Blender 2.78c
 
 [What is Sonder Games ?](https://www.sondergames.com/)
+
+## Todo
+
+- Anim utils panel
+  - auto-ik switch
+  - show/hide bone groups
+  - enable/disable forward motion
+- Import box
