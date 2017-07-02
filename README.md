@@ -36,3 +36,4 @@ This add-on has been tested with Blender 2.78c
   - generate motion path and update
 - Import box
 - Say if file was created or overwriten in info message
+- auto remove twist and ik bones when exporting
