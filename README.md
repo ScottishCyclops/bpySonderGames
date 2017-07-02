@@ -33,5 +33,6 @@ This add-on has been tested with Blender 2.78c
   - remember how long (frames) each actions were
   - turn ik on or off
   - remember if ik was on/off for each actions
+  - generate motion path and update
 - Import box
 - Say if file was created or overwriten in info message
