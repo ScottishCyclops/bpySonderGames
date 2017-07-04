@@ -34,6 +34,8 @@ This add-on has been tested with Blender 2.78c
   - turn ik on or off
   - remember if ik was on/off for each actions
   - generate motion path and update
+  - Actions list
+  - New action button (from base pose, from current action, set length, set name)
 - Import box
 - Say if file was created or overwriten in info message
 - auto remove twist and ik bones when exporting
