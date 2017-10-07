@@ -4,6 +4,8 @@ This is the in-house add-on of Sonder Games for Blender.
 
 Is adds features such as one-click Action Sequence or Skeletal Mesh Export for Unreal Engine.
 
+It also includes the `Offset Action` operator, which helps with developping looping animation sequences
+
 
 ## Installation
 
@@ -20,7 +22,7 @@ You should now see the panel added to your 3D view Toolshelf, under Misc.
 
 ## Informations
 
-This add-on has been tested with Blender 2.78c
+This add-on has been tested with Blender 2.79
 
 [What is Sonder Games ?](https://www.sondergames.com/)
 
@@ -30,13 +32,9 @@ This add-on has been tested with Blender 2.78c
   - auto-ik switch
   - show/hide bone groups
   - enable/disable forward motion
-  - remember how long (frames) each actions were
+  - update timeline based on action length
   - turn ik on or off
   - remember if ik was on/off for each actions
-  - generate motion path and update
-  - Actions list
-  - New action button (from base pose, from current action, set length, set name)
+  - more accessible actions list
   - Action folders, easier selecting
-- Import box
-- Say if file was created or overwriten in info message
 - auto remove twist and ik bones when exporting
