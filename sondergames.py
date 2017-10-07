@@ -16,20 +16,20 @@
 bl_info = {
     "name":        "Sonder Games",
     "author":      "Scott Winkelmann <scottlandart@gmail.com>",
-    "version":     (1, 0, 2),
+    "version":     (1, 0, 3),
     "blender":     (2, 79, 0),
     "location":    "View3D > Toolshelf > Misc > Sonder Games Tools",
     "description": "Sonder Games utilities for Blender",
     "warning":     "",
     "wiki_url":    "https://github.com/ScottishCyclops/bpySonderGames",
     "tracker_url": "https://github.com/ScottishCyclops/bpySonderGames/issues",
-    "category":    "Import-Export",
+    "category":    "Tools",
 }
 
+import math
 import bpy
 import sys
 from os.path import abspath, exists, join, sep
-import math
 
 
 def find(name: str, search_paths: iter) -> any:
@@ -54,7 +54,6 @@ else:
     raise RuntimeError("Could not find export_fbx_bin folder")
 
 from io_scene_fbx import export_fbx_bin
-
 
 # dict containing the custom properties to export an action sequence
 as_export_kwargs = dict(apply_unit_scale=True,
@@ -85,7 +84,8 @@ sk_export_kwargs = dict(apply_unit_scale=True,
 
 def export_fbx(operator, context, objects, name, kwargs):
     """
-    Exports objects to fbx, with the given name and parameters, under the scene export path\t
+    Exports objects to fbx, with the given name and parameters,
+    under the scene export path\t\t
     :param operator: the operator though which we report messages\t
     :param context: the context to use\t
     :param objects: the list of objects to include in the exported file\t\t
@@ -99,20 +99,21 @@ def export_fbx(operator, context, objects, name, kwargs):
     file_exists = exists(file_path)
 
     if file_exists and not operator.overwrite:
-        operator.report({"WARNING"}, "File exists: " + file_name)
-    else:
-        export_fbx_bin.save_single(operator, context.scene,
-                                   filepath=file_path,
-                                   context_objects=objects,
-                                   **kwargs
-                                   )
-        operator.report(
-            {"INFO"}, "File " + ("overwritten" if file_exists else "exported") + ": " + file_name)
+        operator.report({"ERROR"}, "File exists: " + file_name)
+        return
+
+    export_fbx_bin.save_single(operator, context.scene,
+                               filepath=file_path,
+                               context_objects=objects,
+                               **kwargs)
+    operator.report({"INFO"}, "File " +
+                    ("overwritten" if file_exists else "exported") +
+                    ": " + file_name)
 
 
 def export_action_sequence(operator, context, action):
     """
-    Exports a given action into a fbx file, using custom properties\t
+    Exports a given action as an action sequence into an fbx file\t
     :param operator: the operator though which we report messages\t
     :param context: the context in which the action resides\t\t
     :param action: the action to export\t
@@ -131,7 +132,7 @@ def export_action_sequence(operator, context, action):
 
 def export_skeletal_mesh(operator, context, objects, name):
     """
-    Exports given objects as a skeletal mesh into a fbx file, using custom properties\t
+    Exports given objects as a skeletal mesh into an fbx file\t
     :param operator: the operator though which we report messages\t
     :param context: the context in which the objects resides\t
     :param objects: the objects to export\t
@@ -149,45 +150,20 @@ def export_skeletal_mesh(operator, context, objects, name):
             armature = obj
 
     if mesh is None or armature is None:
-        operator.report(
-            {"ERROR"}, "Selection does not contain a mesh and armature")
-    else:
-        try:
-            if armature.name != "root":
-                operator.report({"WARNING"}, "Armature should be named 'root'")
+        operator.report({"ERROR"}, "You must select a mesh and an armature")
+        return
 
-            export_fbx(operator, context, objects, name, sk_export_kwargs)
-        except Exception as e:
-            operator.report({"WARNING"}, str(e))
+    try:
+        if armature.name != "root":
+            operator.report({"WARNING"}, "Armature should be named 'root'")
 
-
-'''
-# TODO: remove, not usefull
-class SgExportAllActions(bpy.types.Operator):
-    """Export all actions in the scene as FBX files"""
-
-    bl_idname = "sg.export_all_as"
-    bl_label = "Export all actions as action sequences"
-    bl_options = {"REGISTER"}
-
-    overwrite = bpy.props.BoolProperty(name="overwrite", default=False)
-
-    def run(self, context):
-        all_actions = bpy.data.actions
-        for action in all_actions:
-            export_action_sequence(self, context, action)
-
-    def execute(self, context):
-        self.run(context)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-'''
+        export_fbx(operator, context, objects, name, sk_export_kwargs)
+    except Exception as e:
+        operator.report({"WARNING"}, str(e))
 
 
 class SgExportCurrentAction(bpy.types.Operator):
-    """Export the active action of the selected object as an FBX file"""
+    """Export the active action of the selected object as an fbx file"""
 
     bl_idname = "sg.export_as"
     bl_label = "Export current action as an action sequence"
@@ -197,21 +173,22 @@ class SgExportCurrentAction(bpy.types.Operator):
 
     def run(self, context):
         active = context.active_object
-        if active is not None:
-            if active.type != "ARMATURE":
-                self.report({"WARNING"}, "You may want to select an armature")
-
-            if active.animation_data is not None:
-                if active.animation_data.action is not None:
-                    export_action_sequence(
-                        self, context, active.animation_data.action)
-                else:
-                    self.report(
-                        {"ERROR"}, "Selected object has no active action")
-            else:
-                self.report({"ERROR"}, "Selected object has no animation data")
-        else:
+        if active is None:
             self.report({"ERROR"}, "No active object")
+            return
+
+        if active.type != "ARMATURE":
+            self.report({"WARNING"}, "You may want to select an armature")
+
+        if active.animation_data is None:
+            self.report({"ERROR"}, "Selected object has no animation data")
+            return
+
+        if active.animation_data.action is None:
+            self.report({"ERROR"}, "Selected object has no active action")
+            return
+
+        export_action_sequence(self, context, active.animation_data.action)
 
     def execute(self, context):
         self.run(context)
@@ -222,7 +199,7 @@ class SgExportCurrentAction(bpy.types.Operator):
 
 
 class SgExportSkeletalMesh(bpy.types.Operator):
-    """Export the selection into a skeletal mesh as an FBX file"""
+    """Export the selection into a skeletal mesh as an fbx file"""
 
     bl_idname = "sg.export_sk"
     bl_label = "Export selection as a Skeletal mesh"
@@ -286,7 +263,8 @@ class SgOffsetAction(bpy.types.Operator):
         # copy keyframes before
         for fcurve in action.fcurves:
             for kf in fcurve.keyframe_points:
-                fcurve.keyframe_points.insert(kf.co.x - num_frames, kf.co.y, {"FAST"})
+                fcurve.keyframe_points.insert(
+                    kf.co.x - num_frames, kf.co.y, {"FAST"})
             # from doc: `Ensure keyframes are sorted in chronological order
             # and handles are set correctly`
             fcurve.update()
@@ -328,14 +306,12 @@ class SgOffsetAction(bpy.types.Operator):
 
 
 class SgToolsUi(bpy.types.Panel):
-    """Defines the SonderGames Tools panel located on the left panel in the 3D view"""
+    """Defines the SonderGames Tools panel located on the left in 3D view"""
 
     bl_idname = "VIEW_3D_PT_sg_tools"
     bl_label = "Sonder Games Tools"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
-
-    # bl_context = "object"
 
     def draw(self, context):
         # export box
@@ -352,7 +328,6 @@ class SgToolsUi(bpy.types.Panel):
         row_export_0_label.label(text="Global Settings")
         row_export_0.prop(context.scene, "export_path")
         row_export_1_label.label(text="Action Sequence")
-        # row_export_1.operator(SgExportAllActions.bl_idname, icon="ACTION", text="Export All")
         row_export_1.operator(SgExportCurrentAction.bl_idname,
                               icon="ACTION", text="Export Active")
         row_export_2_label.label(text="Skeletal Mesh")
@@ -372,11 +347,9 @@ def register():
     bpy.types.Scene.export_path = bpy.props.StringProperty(
         name="Export path",
         default=sep,
-        description="Define the export path of FBX files",
+        description="Define the export path of fbx files",
         subtype="DIR_PATH"
     )
-    # bpy.types.Action.offset
-    # bpy.utils.register_class(SgExportAllActions)
     bpy.utils.register_class(SgExportCurrentAction)
     bpy.utils.register_class(SgExportSkeletalMesh)
     bpy.utils.register_class(SgToolsUi)
@@ -388,7 +361,6 @@ def unregister():
     bpy.utils.unregister_class(SgToolsUi)
     bpy.utils.unregister_class(SgExportSkeletalMesh)
     bpy.utils.unregister_class(SgExportCurrentAction)
-    # bpy.utils.unregister_class(SgExportAllActions)
     del bpy.types.Scene.export_path
 
 
