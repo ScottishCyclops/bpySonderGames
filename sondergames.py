@@ -335,12 +335,13 @@ class SgToolsUi(bpy.types.Panel):
                               icon="MESH_MONKEY", text="Export Selected")
 
         # import box
-        self.layout.label(text="Import")
+        self.layout.label(text="Tools")
         box_import = self.layout.box()
         col_import = box_import.column(align=True)
         row_import_0 = col_import.row()
 
-        row_import_0.label(text="WIP")
+        row_import_0.operator(SgOffsetAction.bl_idname, icon="ARROW_LEFTRIGHT",
+                              text="Offset action")
 
 
 def register():
